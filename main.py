@@ -243,10 +243,32 @@ def create_schedule_chart(lessons: List[Lesson]) -> str:
                     lesson_text = f"{lesson.name}\n({lesson.units} واحد)"
                     display_text = _maybe_shape_persian(lesson_text)
 
-                    # Draw text with larger font and center alignment
-                    ax.text(text_x, text_y, display_text,
-                            ha="center", va="center", fontsize=20, fontweight="bold",
-                            bbox=dict(boxstyle="round,pad=0.6", facecolor="white", alpha=0.95))
+                    # Draw text with larger font and center alignment. To avoid the white
+                    # rounded bbox around the text overflowing the colored lesson block
+                    # we attach the rectangle as a clip path to the text. This clips
+                    # both the text and its bbox to the patch area so the white box
+                    # won't escape the colored rectangle. We also reduce the bbox
+                    # padding slightly for a tighter fit.
+                    txt = ax.text(text_x, text_y, display_text,
+                                  ha="center", va="center", fontsize=20, fontweight="bold",
+                                  bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.95),
+                                  zorder=3)
+
+                    try:
+                        # Clip the text (and its bbox) to the rectangle patch so the
+                        # white label can't extend outside. Some matplotlib versions
+                        # accept a Patch directly as the clip path.
+                        txt.set_clip_path(rect)
+                    except Exception:
+                        # If direct clip_path with patch fails, try using the patch's
+                        # path and transform as a fallback.
+                        try:
+                            txt.set_clip_path(rect.get_path(), rect.get_transform())
+                        except Exception:
+                            # If clipping fails for any reason, proceed without it
+                            # (better to show the text than crash); the bbox padding
+                            # has already been reduced as a mitigating measure.
+                            pass
 
             except (ValueError, IndexError):
                 continue
@@ -308,11 +330,17 @@ async def read_root(request: Request):
 @app.post("/generate_chart")
 async def generate_chart(request: Request):
     form_data = await request.form()
+    # Keep the raw lessons JSON so we can return it to the template for client-side
+    # restoration of the form even if chart generation fails.
+    lessons_json = form_data.get("lessons_data", "[]")
 
     try:
-        # Parse the lessons data from the form
-        lessons_data = json.loads(form_data.get("lessons_data", "[]"))
+        lessons_data = json.loads(lessons_json)
+    except Exception:
+        lessons_data = []
 
+    try:
+        # Build validated Lesson objects from the parsed data
         lessons: List[Lesson] = []
         for lesson_data in lessons_data:
             schedules = []
@@ -324,8 +352,8 @@ async def generate_chart(request: Request):
                 ))
 
             lessons.append(Lesson(
-                name=lesson_data["name"],
-                units=int(lesson_data["units"]),
+                name=lesson_data.get("name", ""),
+                units=int(lesson_data.get("units", 0)),
                 schedules=schedules
             ))
 
@@ -335,13 +363,17 @@ async def generate_chart(request: Request):
         return templates.TemplateResponse("index.html", {
             "request": request,
             "chart_generated": True,
-            "chart_filename": chart_filename
+            "chart_filename": chart_filename,
+            # Pass the original lessons JSON back so the client can restore form inputs
+            "lessons_data": lessons_data
         })
 
     except Exception as e:
+        # On error, include the lessons data so the form can be rehydrated for fixes
         return templates.TemplateResponse("index.html", {
             "request": request,
-            "error": f"خطا در ایجاد نمودار: {str(e)}"
+            "error": f"خطا در ایجاد نمودار: {str(e)}",
+            "lessons_data": lessons_data
         })
 
 

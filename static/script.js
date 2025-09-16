@@ -297,7 +297,7 @@ function addLesson() {
                     </div>
                     <button type="button" class="btn btn-danger remove-schedule" onclick="removeSchedule(this)">حذف زمان</button>
                 </div>
-                <button type="button" class="btn btn-secondary add-schedule" onclick="addSchedule(${lessonIndex})">افزودن زمان جدید</button>
+                <button type="button" class="btn btn-secondary add-schedule" data-lesson="${lessonIndex}">افزودن زمان جدید</button>
             </div>
             <button type="button" class="btn btn-danger remove-lesson" onclick="removeLesson(this)">حذف درس</button>
         </div>
@@ -555,4 +555,13 @@ document.addEventListener("click", function (e) {
       updateLessonNumbers();
     }
   }
+});
+
+// Delegate clicks for add-schedule buttons that carry a data-lesson attribute
+document.addEventListener("click", function (e) {
+  const addBtn =
+    e.target.closest && e.target.closest(".add-schedule[data-lesson]");
+  if (!addBtn) return;
+  const lessonIndex = parseInt(addBtn.getAttribute("data-lesson"), 10);
+  if (!Number.isNaN(lessonIndex)) addSchedule(lessonIndex);
 });

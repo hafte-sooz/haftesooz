@@ -155,7 +155,9 @@ header p {
   color: white;
   padding: 10px 15px;
   border-radius: 8px;
-  margin: -10px -10px 20px -10px;
+  margin: 0 0 20px 0; /* keep header inside the card */
+  display: block;
+  box-sizing: border-box;
 }
 
 .lesson-basic-info {
