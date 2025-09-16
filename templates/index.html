@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>هفته سوز - برنامه هفتگی دروس</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>هفته سوز</h1>
+        <p>برنامه هفتگی دروس خود را ایجاد کنید</p>
+      </header>
+
+      {% if error %}
+      <div class="error-message">{{ error }}</div>
+      {% endif %}
+
+      <div class="content">
+        <div class="form-section">
+          <h2>اطلاعات دروس</h2>
+          <form id="lessonForm" method="post" action="/generate_chart">
+            <div id="lessons-container">
+              <div class="lesson-item">
+                <h3>درس ۱</h3>
+                <div class="lesson-basic-info">
+                  <div class="form-group">
+                    <label for="lesson-name-0">نام درس:</label>
+                    <input
+                      type="text"
+                      id="lesson-name-0"
+                      name="lesson-name-0"
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="lesson-units-0">تعداد واحد:</label>
+                    <input
+                      type="number"
+                      id="lesson-units-0"
+                      name="lesson-units-0"
+                      min="1"
+                      max="6"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="schedules-container" data-lesson="0">
+                  <h4>زمان‌بندی دروس:</h4>
+                  <div class="schedule-item">
+                    <div class="form-group">
+                      <label>روز:</label>
+                      <select name="day-0-0" required>
+                        <option value="">انتخاب کنید</option>
+                        <option value="شنبه">شنبه</option>
+                        <option value="یکشنبه">یکشنبه</option>
+                        <option value="دوشنبه">دوشنبه</option>
+                        <option value="سه‌شنبه">سه‌شنبه</option>
+                        <option value="چهارشنبه">چهارشنبه</option>
+                        <option value="پنج‌شنبه">پنج‌شنبه</option>
+                        <option value="جمعه">جمعه</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>ساعت شروع:</label>
+                      <select name="start-time-0-0" required>
+                        <option value="">انتخاب کنید</option>
+                        <option value="06:00">۰۶:۰۰</option>
+                        <option value="07:00">۰۷:۰۰</option>
+                        <option value="08:00">۰۸:۰۰</option>
+                        <option value="09:00">۰۹:۰۰</option>
+                        <option value="10:00">۱۰:۰۰</option>
+                        <option value="11:00">۱۱:۰۰</option>
+                        <option value="12:00">۱۲:۰۰</option>
+                        <option value="13:00">۱۳:۰۰</option>
+                        <option value="14:00">۱۴:۰۰</option>
+                        <option value="15:00">۱۵:۰۰</option>
+                        <option value="16:00">۱۶:۰۰</option>
+                        <option value="17:00">۱۷:۰۰</option>
+                        <option value="18:00">۱۸:۰۰</option>
+                        <option value="19:00">۱۹:۰۰</option>
+                        <option value="20:00">۲۰:۰۰</option>
+                        <option value="21:00">۲۱:۰۰</option>
+                        <option value="22:00">۲۲:۰۰</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>ساعت پایان:</label>
+                      <select name="end-time-0-0" required>
+                        <option value="">انتخاب کنید</option>
+                        <option value="07:00">۰۷:۰۰</option>
+                        <option value="08:00">۰۸:۰۰</option>
+                        <option value="09:00">۰۹:۰۰</option>
+                        <option value="10:00">۱۰:۰۰</option>
+                        <option value="11:00">۱۱:۰۰</option>
+                        <option value="12:00">۱۲:۰۰</option>
+                        <option value="13:00">۱۳:۰۰</option>
+                        <option value="14:00">۱۴:۰۰</option>
+                        <option value="15:00">۱۵:۰۰</option>
+                        <option value="16:00">۱۶:۰۰</option>
+                        <option value="17:00">۱۷:۰۰</option>
+                        <option value="18:00">۱۸:۰۰</option>
+                        <option value="19:00">۱۹:۰۰</option>
+                        <option value="20:00">۲۰:۰۰</option>
+                        <option value="21:00">۲۱:۰۰</option>
+                        <option value="22:00">۲۲:۰۰</option>
+                        <option value="23:00">۲۳:۰۰</option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-danger remove-schedule"
+                      onclick="removeSchedule(this)"
+                    >
+                      حذف زمان
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-secondary add-schedule"
+                    onclick="addSchedule(0)"
+                  >
+                    افزودن زمان جدید
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-danger remove-lesson"
+                  onclick="removeLesson(this)"
+                >
+                  حذف درس
+                </button>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="addLesson()"
+              >
+                افزودن درس جدید
+              </button>
+              <button type="submit" class="btn btn-primary">
+                ایجاد برنامه
+              </button>
+            </div>
+
+            <input type="hidden" name="lessons_data" id="lessons_data" />
+          </form>
+        </div>
+
+        {% if chart_generated and chart_filename %}
+        <!-- Modal preview for generated chart -->
+        <div id="chartModal" class="modal-overlay open">
+          <div
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="پیش‌نمایش برنامه"
+          >
+            <h3>پیش‌نمایش برنامه هفتگی</h3>
+            <img src="/chart/{{ chart_filename }}" alt="برنامه هفتگی" />
+            <div class="modal-actions">
+              <a
+                href="/chart/{{ chart_filename }}"
+                download="haftesooz_schedule.png"
+                class="btn btn-download"
+                >دانلود تصویر</a
+              >
+              <button type="button" class="btn btn-close" id="closeChartModal">
+                بستن
+              </button>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+
+    <script>
+      // Modal control: close button
+      (function () {
+        const closeBtn = document.getElementById("closeChartModal");
+        const overlay = document.getElementById("chartModal");
+        if (closeBtn && overlay) {
+          closeBtn.addEventListener("click", function () {
+            overlay.classList.remove("open");
+            overlay.style.display = "none";
+          });
+          // allow clicking overlay to close
+          overlay.addEventListener("click", function (e) {
+            if (e.target === overlay) {
+              overlay.classList.remove("open");
+              overlay.style.display = "none";
+            }
+          });
+        }
+      })();
+    </script>
+
+    {% if lessons_data %}
+    <div
+      id="lessons-data"
+      style="display: none"
+      data-lessons="{{ lessons_data | tojson }}"
+    ></div>
+    <script>
+      // Restore form data after chart generation or error.
+      // Run immediately (the script is placed at the end of the body),
+      // but also attach to DOMContentLoaded as a fallback.
+      (function restoreIfPresent() {
+        try {
+          const dataElement = document.getElementById("lessons-data");
+          if (dataElement) {
+            const lessonsData = JSON.parse(
+              dataElement.getAttribute("data-lessons") || "[]"
+            );
+            if (typeof restoreFormData === "function") {
+              restoreFormData(lessonsData);
+            } else {
+              // If restoreFormData isn't loaded yet, wait for DOMContentLoaded
+              document.addEventListener("DOMContentLoaded", function () {
+                if (typeof restoreFormData === "function")
+                  restoreFormData(lessonsData);
+              });
+            }
+          }
+        } catch (err) {
+          console.warn("Failed to restore lessons data:", err);
+        }
+      })();
+    </script>
+    {% endif %}
+  </body>
+</html>
