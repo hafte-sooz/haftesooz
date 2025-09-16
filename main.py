@@ -243,32 +243,85 @@ def create_schedule_chart(lessons: List[Lesson]) -> str:
                     lesson_text = f"{lesson.name}\n({lesson.units} واحد)"
                     display_text = _maybe_shape_persian(lesson_text)
 
-                    # Draw text with larger font and center alignment. To avoid the white
-                    # rounded bbox around the text overflowing the colored lesson block
-                    # we attach the rectangle as a clip path to the text. This clips
-                    # both the text and its bbox to the patch area so the white box
-                    # won't escape the colored rectangle. We also reduce the bbox
-                    # padding slightly for a tighter fit.
-                    txt = ax.text(text_x, text_y, display_text,
-                                  ha="center", va="center", fontsize=20, fontweight="bold",
-                                  bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.95),
-                                  zorder=3)
+                    # Smart font sizing: measure text in pixels and reduce size until it fits
+                    # Make text black and bold. This approach uses the renderer to get
+                    # exact extents so we can ensure the label doesn't overflow.
+                    # Start with a generous max font size and shrink to fit.
+                    max_font = 32
+                    min_font = 10
 
+                    # Try to create a sensible multi-line text (split long names reasonably)
+                    words = lesson.name.split()
+                    if len(words) > 1 and len(lesson.name) > 20 and duration >= 2:
+                        mid = len(words) // 2
+                        line1 = " ".join(words[:mid])
+                        line2 = " ".join(words[mid:])
+                        candidate_text = f"{line1}\n{line2}\n({lesson.units} واحد)"
+                    else:
+                        candidate_text = f"{lesson.name}\n({lesson.units} واحد)"
+
+                    # Place a Text object with an initial large fontsize, then measure
+                    txt = ax.text(text_x, text_y, _maybe_shape_persian(candidate_text),
+                                  ha="center", va="center", fontsize=max_font,
+                                  fontweight="bold", color="black", zorder=3)
+
+                    # Ensure canvas has a renderer available
                     try:
-                        # Clip the text (and its bbox) to the rectangle patch so the
-                        # white label can't extend outside. Some matplotlib versions
-                        # accept a Patch directly as the clip path.
-                        txt.set_clip_path(rect)
+                        fig.canvas.draw()
+                        renderer = fig.canvas.get_renderer()
+
+                        # Rectangle bounds in display (pixel) coordinates
+                        p0 = ax.transData.transform((start_pos, rect_y))
+                        p1 = ax.transData.transform((start_pos + duration, rect_y + rect_height))
+                        rect_w_px = abs(p1[0] - p0[0])
+                        rect_h_px = abs(p1[1] - p0[1])
+
+                        # Padding inside the rectangle (pixels)
+                        pad_px = max(6, rect_w_px * 0.06)
+
+                        # Iteratively reduce fontsize until text fits width and height
+                        bbox = txt.get_window_extent(renderer=renderer)
+                        current_font = max_font
+                        attempts = 0
+                        while (bbox.width > (rect_w_px - pad_px) or bbox.height > (rect_h_px - pad_px)) and current_font > min_font and attempts < 10:
+                            # Scale font proportionally to available width (conservative)
+                            scale = (rect_w_px - pad_px) / max(bbox.width, 1)
+                            new_font = max(min_font, int(current_font * scale * 0.95))
+                            if new_font >= current_font:
+                                new_font = current_font - 1
+                            current_font = new_font
+                            txt.set_fontsize(current_font)
+                            fig.canvas.draw()
+                            bbox = txt.get_window_extent(renderer=renderer)
+                            attempts += 1
+
+                        # If text still doesn't fit and we used a single-line name, try splitting words again
+                        if (bbox.width > (rect_w_px - pad_px) or bbox.height > (rect_h_px - pad_px)) and len(words) > 1:
+                            mid = len(words) // 2
+                            line1 = " ".join(words[:mid])
+                            line2 = " ".join(words[mid:])
+                            candidate_text = f"{line1}\n{line2}\n({lesson.units} واحد)"
+                            txt.set_text(_maybe_shape_persian(candidate_text))
+                            # Reset font and try shrinking again
+                            current_font = min(max_font, current_font)
+                            txt.set_fontsize(current_font)
+                            fig.canvas.draw()
+                            bbox = txt.get_window_extent(renderer=renderer)
+                            attempts = 0
+                            while (bbox.width > (rect_w_px - pad_px) or bbox.height > (rect_h_px - pad_px)) and current_font > min_font and attempts < 10:
+                                scale = (rect_w_px - pad_px) / max(bbox.width, 1)
+                                new_font = max(min_font, int(current_font * scale * 0.95))
+                                if new_font >= current_font:
+                                    new_font = current_font - 1
+                                current_font = new_font
+                                txt.set_fontsize(current_font)
+                                fig.canvas.draw()
+                                bbox = txt.get_window_extent(renderer=renderer)
+                                attempts += 1
+
                     except Exception:
-                        # If direct clip_path with patch fails, try using the patch's
-                        # path and transform as a fallback.
-                        try:
-                            txt.set_clip_path(rect.get_path(), rect.get_transform())
-                        except Exception:
-                            # If clipping fails for any reason, proceed without it
-                            # (better to show the text than crash); the bbox padding
-                            # has already been reduced as a mitigating measure.
-                            pass
+                        # If renderer-based sizing fails for any reason, fallback to a readable default
+                        txt.set_fontsize(14)
 
             except (ValueError, IndexError):
                 continue
