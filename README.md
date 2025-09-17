@@ -133,6 +133,42 @@ pip install asgiref
 # سپس Passenger را از طریق cPanel بارگذاری مجدد کنید یا وب‌سایت را ری‌استارت کنید
 ```
 
-اگر نیاز دارید من می‌توانم کمک کنم تا یک فایل `Procfile` یا یک دستور systemd/upervisor برای میزبان شما ایجاد کنیم.
+### ⚠️ مهم: حل مشکل تغییر خودکار main.py در cPanel
+
+اگر cPanel فایل `main.py` شما را به یک WSGI stub ساده تبدیل کرده (مثل چیزی که در تصاویر نشان داده شده)، این مراحل را دنبال کنید:
+
+#### مرحله ۱: بازیابی main.py
+
+```bash
+# 1. فایل main.py اصلی را از GitHub دانلود کنید و جایگزین کنید
+wget https://raw.githubusercontent.com/hafte-sooz/haftesooz/main/main.py -O main.py
+
+# یا اگر git clone کرده‌اید، از git checkout استفاده کنید:
+git checkout main.py
+```
+
+#### مرحله ۲: تغییر تنظیمات cPanel
+
+در پنل کنترل cPanel، بخش Python App:
+
+1. **Application startup file** را از `main.py` به `passenger_wsgi.py` تغییر دهید
+2. **Application Entry point** را روی `application` بگذارید (همانطور که هست)
+3. روی "Restart" کلیک کنید
+
+#### مرحله ۳: نصب آداپتور WSGI
+
+```bash
+# در terminal cPanel یا SSH، در پوشه پروژه:
+source venv/bin/activate  # یا مسیر virtual environment شما
+pip install asgiref
+```
+
+#### چرا این کار می‌کند؟
+
+- `passenger_wsgi.py` فقط `application` را از `wsgi.py` import می‌کند
+- `wsgi.py` شامل wrapper برای تبدیل FastAPI (ASGI) به WSGI است
+- `main.py` دست‌نخورده باقی می‌ماند و cPanel آن را تغییر نمی‌دهد
+
+اگر نیاز دارید من می‌توانم کمک کنم تا یک فایل `Procfile` یا یک دستور systemd/supervisor برای میزبان شما ایجاد کنیم.
 
 در صورت بروز مشکل یا پیشنهاد، لطفاً Issue جدید ایجاد کنید.
