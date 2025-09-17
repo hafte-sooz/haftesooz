@@ -105,4 +105,34 @@ haftesooz/
 
 ## پشتیبانی
 
+## استقرار روی cPanel / Passenger (WSGI)
+
+برای استقرار این برنامه روی cPanel که از Passenger و WSGI استفاده می‌کند، فایل‌های کمکی زیر اضافه شده‌اند:
+
+- `wsgi.py`: یک لایه‌ی wrapper که `main.app` (FastAPI ASGI app) را با یک آداپتور ASGI→WSGI بسته‌بندی می‌کند و یک callable به نام `application` صادر می‌کند.
+- `passenger_wsgi.py`: بارگذار پیش‌فرض Passenger که `application` را از `wsgi.py` وارد می‌کند.
+
+نکات مهم:
+
+- Passenger نیاز به یک اپ WSGI به نام `application` دارد؛ `wsgi.py` همین callable را فراهم می‌کند.
+- برای عملکرد صحیح باید یک آداپتور ASGI→WSGI در virtualenv نصب باشد. دو گزینه رایج:
+  - `asgiref` (تأمین‌کننده‌ی `AsgiToWsgi`) — نصب: `pip install asgiref`
+  - `asgi2wsgi` — نصب: `pip install asgi2wsgi`
+
+اگر هیچ آداپتوری نصب نشده باشد، `wsgi.py` یک پاسخ خطای مفید برمی‌گرداند و به شما می‌گوید چه پکیج‌هایی را نصب کنید.
+
+نمونه دستورالعمل سریع برای cPanel (در virtualenv پروژه):
+
+```fish
+# در روت پروژه، وِیرچوال‌انور را فعال کنید
+source haftesooz_env/bin/activate.fish
+
+# نصب یک آداپتور (مثال)
+pip install asgiref
+
+# سپس Passenger را از طریق cPanel بارگذاری مجدد کنید یا وب‌سایت را ری‌استارت کنید
+```
+
+اگر نیاز دارید من می‌توانم کمک کنم تا یک فایل `Procfile` یا یک دستور systemd/upervisor برای میزبان شما ایجاد کنیم.
+
 در صورت بروز مشکل یا پیشنهاد، لطفاً Issue جدید ایجاد کنید.
