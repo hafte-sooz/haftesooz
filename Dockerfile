@@ -4,19 +4,6 @@ FROM python:3.12-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for matplotlib, fonts, and other requirements
-RUN apt-get update && apt-get install -y \
-    fonts-noto \
-    fonts-noto-cjk \
-    fonts-noto-extra \
-    fonts-dejavu \
-    fontconfig \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Update font cache
-RUN fc-cache -fv
-
 # Copy requirements first for better Docker layer caching
 COPY requirements.txt .
 

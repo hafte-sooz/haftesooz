@@ -112,32 +112,36 @@ def create_schedule_chart(lessons: List[Lesson]) -> str:
         get_display = None
         bidi_available = False
 
-    # Configure matplotlib for shared hosting environment
-    # Use fallback fonts that are commonly available or bundled with matplotlib
+    # Configure matplotlib to use our downloaded Vazirmatn fonts
+    # Register the Vazirmatn fonts with matplotlib
     try:
-        # Try to use any available font, but don't fail if none are found
-        available_fonts = [f.name for f in font_manager.fontManager.ttflist]
+        # Add our font directory to matplotlib
+        import os
+        font_dir = os.path.join(os.path.dirname(__file__), 'static', 'fonts')
         
-        # Preferred fonts in order of preference
-        preferred_fonts = [
-            "DejaVu Sans", "Liberation Sans", "Bitstream Vera Sans",
-            "Arial", "Helvetica", "sans-serif"
+        # Register our Vazirmatn TTF fonts
+        vazirmatn_fonts = [
+            'Vazirmatn-Light.ttf',
+            'Vazirmatn-Regular.ttf', 
+            'Vazirmatn-Medium.ttf',
+            'Vazirmatn-SemiBold.ttf',
+            'Vazirmatn-Bold.ttf'
         ]
         
-        selected_font = None
-        for font_name in preferred_fonts:
-            if font_name in available_fonts:
-                selected_font = font_name
-                break
+        for font_file in vazirmatn_fonts:
+            font_path = os.path.join(font_dir, font_file)
+            if os.path.exists(font_path):
+                font_manager.fontManager.addfont(font_path)
         
-        if selected_font:
-            plt.rcParams["font.family"] = [selected_font]
-        else:
-            # Use matplotlib's default font fallback
-            plt.rcParams["font.family"] = ["sans-serif"]
+        # Set Vazirmatn as the primary font family
+        plt.rcParams["font.family"] = ["Vazirmatn"]
+        
+        # Rebuild font cache to include our fonts
+        font_manager.fontManager.findfont('Vazirmatn', rebuild_if_missing=True)
             
-    except Exception:
-        # If all else fails, use matplotlib defaults
+    except Exception as e:
+        # If font loading fails, fall back to matplotlib defaults
+        print(f"Warning: Could not load Vazirmatn fonts: {e}")
         plt.rcParams["font.family"] = ["sans-serif"]
 
     plt.rcParams["font.size"] = 16

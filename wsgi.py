@@ -22,10 +22,11 @@ try:
     from main import app as asgi_app
 except Exception as exc:  # pragma: no cover - very unlikely during normal import
     # If importing fails, provide a minimal WSGI app explaining the problem.
+    error_msg = str(exc)
     def application(environ, start_response):
         start_response('500 Internal Server Error', [('Content-Type', 'text/plain; charset=utf-8')])
-        msg = ("Failed to import ASGI app from main.py: " + str(exc) + "\n").encode('utf-8')
-        return [msg]
+        msg = "Failed to import ASGI app from main.py: " + error_msg + "\n"
+        return [msg.encode('utf-8')]
 else:
     # Try AsgiToWsgi from asgiref (commonly available via starlette/fastapi deps)
     try:
@@ -47,5 +48,5 @@ else:
                     "Install one of the following in your virtualenv and restart:\n"
                     "  pip install asgiref    # provides AsgiToWsgi\n"
                     "  pip install asgi2wsgi  # alternative adapter\n"
-                ).encode('utf-8')
-                return [msg]
+                )
+                return [msg.encode('utf-8')]
