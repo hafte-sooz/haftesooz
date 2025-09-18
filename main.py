@@ -2,9 +2,6 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from matplotlib import font_manager
 import json
 import uuid
 import os
@@ -99,6 +96,12 @@ def create_schedule_chart(lessons: List[Lesson]) -> str:
     Persian shaping (arabic_reshaper + python-bidi) is used when available.
     """
 
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as patches
+    from matplotlib import font_manager
+
     # Optional RTL shaping libraries
     try:
         import arabic_reshaper
@@ -109,29 +112,33 @@ def create_schedule_chart(lessons: List[Lesson]) -> str:
         get_display = None
         bidi_available = False
 
-    # Try to pick a Persian-capable font; fall back to DejaVu Sans
-    preferred_fonts = ["Noto Naskh Arabic", "Noto Sans Arabic", "Vazirmatn", "Vazir", "DejaVu Sans"]
-    selected_font: Optional[str] = None
-    for fname in preferred_fonts:
-        try:
-            fpath = font_manager.findfont(fname, fallback_to_default=False)
-            if fpath and os.path.exists(fpath):
-                selected_font = fpath
+    # Configure matplotlib for shared hosting environment
+    # Use fallback fonts that are commonly available or bundled with matplotlib
+    try:
+        # Try to use any available font, but don't fail if none are found
+        available_fonts = [f.name for f in font_manager.fontManager.ttflist]
+        
+        # Preferred fonts in order of preference
+        preferred_fonts = [
+            "DejaVu Sans", "Liberation Sans", "Bitstream Vera Sans",
+            "Arial", "Helvetica", "sans-serif"
+        ]
+        
+        selected_font = None
+        for font_name in preferred_fonts:
+            if font_name in available_fonts:
+                selected_font = font_name
                 break
-        except Exception:
-            continue
-
-    if selected_font:
-        try:
-            font_name = font_manager.FontProperties(fname=selected_font).get_name()
-            plt.rcParams["font.family"] = [font_name, "DejaVu Sans"]
-            print(f"Using font: {font_name} with DejaVu Sans fallback")
-        except Exception:
-            plt.rcParams["font.family"] = ["Noto Naskh Arabic", "DejaVu Sans"]
-            print("Using fallback fonts: Noto Naskh Arabic, DejaVu Sans")
-    else:
-        plt.rcParams["font.family"] = ["Noto Naskh Arabic", "DejaVu Sans"]
-        print("Using default fonts: Noto Naskh Arabic, DejaVu Sans")
+        
+        if selected_font:
+            plt.rcParams["font.family"] = [selected_font]
+        else:
+            # Use matplotlib's default font fallback
+            plt.rcParams["font.family"] = ["sans-serif"]
+            
+    except Exception:
+        # If all else fails, use matplotlib defaults
+        plt.rcParams["font.family"] = ["sans-serif"]
 
     plt.rcParams["font.size"] = 16
     plt.rcParams["axes.unicode_minus"] = False
