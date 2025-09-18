@@ -113,36 +113,52 @@ def create_schedule_chart(lessons: List[Lesson]) -> str:
         bidi_available = False
 
     # Configure matplotlib to use our downloaded Vazirmatn fonts
-    # Register the Vazirmatn fonts with matplotlib
+    # We'll register the local TTF files and create a FontProperties pointing
+    # to Vazirmatn-Regular.ttf so we can set it globally and also pass it
+    # explicitly to individual text calls when needed.
     try:
-        # Add our font directory to matplotlib
         import os
+        from matplotlib import rcParams
+        from matplotlib import font_manager as fm
+
         font_dir = os.path.join(os.path.dirname(__file__), 'static', 'fonts')
-        
-        # Register our Vazirmatn TTF fonts
-        vazirmatn_fonts = [
-            'Vazirmatn-Light.ttf',
-            'Vazirmatn-Regular.ttf', 
-            'Vazirmatn-Medium.ttf',
-            'Vazirmatn-SemiBold.ttf',
-            'Vazirmatn-Bold.ttf'
-        ]
-        
-        for font_file in vazirmatn_fonts:
-            font_path = os.path.join(font_dir, font_file)
-            if os.path.exists(font_path):
-                font_manager.fontManager.addfont(font_path)
-        
-        # Set Vazirmatn as the primary font family
-        plt.rcParams["font.family"] = ["Vazirmatn"]
-        
-        # Rebuild font cache to include our fonts
-        font_manager.fontManager.findfont('Vazirmatn', rebuild_if_missing=True)
-            
+        regular_font_path = os.path.join(font_dir, 'Vazirmatn-Regular.ttf')
+
+        # Register all TTF files we downloaded (if present)
+        for fname in ('Vazirmatn-Light.ttf', 'Vazirmatn-Regular.ttf', 'Vazirmatn-Medium.ttf',
+                      'Vazirmatn-SemiBold.ttf', 'Vazirmatn-Bold.ttf'):
+            fp = os.path.join(font_dir, fname)
+            if os.path.exists(fp):
+                fm.fontManager.addfont(fp)
+
+        # Create a FontProperties object for the regular font
+        if os.path.exists(regular_font_path):
+            persian_font = fm.FontProperties(fname=regular_font_path)
+            # Set global default font family to the registered font name
+            try:
+                rcParams['font.family'] = persian_font.get_name()
+            except Exception:
+                # Fallback: use the file name if get_name() fails
+                rcParams['font.family'] = ['Vazirmatn']
+        else:
+            # If the regular font isn't present, fall back to generic sans-serif
+            rcParams['font.family'] = ['sans-serif']
+
+        # Ensure minus sign renders correctly
+        rcParams['axes.unicode_minus'] = False
+
+        # Expose persian_font for use in local scope (optional)
+        _PERSIAN_FONT_PROP = persian_font if 'persian_font' in locals() else None
+
     except Exception as e:
-        # If font loading fails, fall back to matplotlib defaults
-        print(f"Warning: Could not load Vazirmatn fonts: {e}")
-        plt.rcParams["font.family"] = ["sans-serif"]
+        # If anything goes wrong, use matplotlib defaults but don't crash
+        print(f"Warning: could not configure Vazirmatn fonts for matplotlib: {e}")
+        try:
+            from matplotlib import rcParams
+            rcParams['font.family'] = ['sans-serif']
+            rcParams['axes.unicode_minus'] = False
+        except Exception:
+            pass
 
     plt.rcParams["font.size"] = 16
     plt.rcParams["axes.unicode_minus"] = False
