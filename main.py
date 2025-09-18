@@ -19,6 +19,26 @@ except Exception:
     BIDI_AVAILABLE = False
 from pydantic import BaseModel
 
+font_dir = os.path.join(os.path.dirname(__file__), 'static', 'fonts')
+regular_font_path = os.path.join(font_dir, 'Vazirmatn-Regular.ttf')
+if os.path.exists(regular_font_path):
+    PERSIAN_FONT = fm.FontProperties(fname=regular_font_path)
+else:
+    PERSIAN_FONT = fm.FontProperties(family="sans-serif")
+
+def _maybe_shape_persian(text: str) -> str:
+    """Return Persian text reshaped if libraries exist, else return as-is."""
+    if not text:
+        return text
+    if _arabic_reshaper and _bidi_get_display:
+        try:
+            reshaped = _arabic_reshaper.reshape(text)
+            return _bidi_get_display(reshaped)
+        except Exception:
+            return text
+    return text
+
+
 app = FastAPI()
 
 # Mount static files
@@ -198,7 +218,7 @@ def create_schedule_chart(lessons: List[Lesson]) -> str:
     ax2.set_ylim(ax.get_ylim())
     ax2.set_yticks(range(len(days)))
     # Set the day labels (text) then explicitly set their visual size via tick_params
-    ax2.set_yticklabels(shaped_days)
+    ax2.set_yticklabels(shaped_days, fontproperties=PERSIAN_FONT)
     # Use tick_params to reliably set label size (some backends ignore fontsize in set_yticklabels)
     ax2.tick_params(axis='y', labelsize=24)
     ax2.yaxis.set_ticks_position('right')
@@ -290,7 +310,8 @@ def create_schedule_chart(lessons: List[Lesson]) -> str:
                     # Place a Text object with an initial large fontsize, then measure
                     txt = ax.text(text_x, text_y, _maybe_shape_persian(candidate_text),
                                   ha="center", va="center", fontsize=max_font,
-                                  fontweight="bold", color="black", zorder=3)
+                                  fontweight="bold", color="black", zorder=3,
+                                  fontproperties=PERSIAN_FONT)
 
                     # Ensure canvas has a renderer available
                     try:
@@ -358,7 +379,7 @@ def create_schedule_chart(lessons: List[Lesson]) -> str:
     # Styling with larger fonts
     title = _maybe_shape_persian("برنامه هفتگی دروس")
 
-    ax.set_title(title, fontsize=30, fontweight="bold", pad=30)
+    ax.set_title(title, fontsize=30, fontweight="bold", pad=30, fontproperties=PERSIAN_FONT)
 
     # Invert y-axis to have Saturday at top (mirror the twin axis as well)
     ax.invert_yaxis()
@@ -377,6 +398,7 @@ def create_schedule_chart(lessons: List[Lesson]) -> str:
         try:
             lbl.set_fontsize(24)
             lbl.set_fontweight('bold')
+            lbl.set_fontproperties(PERSIAN_FONT)
         except Exception:
             pass
 
